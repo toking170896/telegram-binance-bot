@@ -9,7 +9,7 @@ import (
 
 type (
 	Svc struct {
-		Db     *sql.DB
+		Db *sql.DB
 	}
 )
 
@@ -59,93 +59,3 @@ func OpenDatabase(c *config.Config) (*Svc, error) {
 
 	return &Svc{db}, nil
 }
-
-//func AddWallet(db *sql.DB, walletAddress string, userID, chatID int, transactionID string) error {
-//	unix := time.Now().Unix()
-//	_, err := db.Exec("INSERT INTO wallets (walletAddress, userID, chatID, transactionID, unixtimestamp) values (?, ?, ?, ?, ?)", walletAddress, userID, chatID, transactionID, unix)
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
-//
-//func UpdateWalletWithTransaction(db *sql.DB, walletAddress, transactionID string) error {
-//	unix := time.Now().Unix()
-//	sqlStatement := `UPDATE wallets SET transactionID = ?, unixtimestamp = ? WHERE walletAddress = ?;`
-//	_, err := db.Exec(sqlStatement, transactionID, unix, walletAddress)
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
-//
-//func RemoveWallet(db *sql.DB, walletAddress string, userID int) error {
-//	_, err := db.Exec("DELETE FROM wallets WHERE walletAddress = ? AND userID = ?", walletAddress, userID)
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
-//
-//func GetUserWalletsAddresses(db *sql.DB, userID int) ([]string, error) {
-//	var wallets []string
-//	var wallet string
-//	rows, err := db.Query("SELECT walletAddress FROM wallets where userID = ?", userID)
-//	//rows, err := db.Query("SELECT walletAddress FROM wallets WHERE userID = $1;", userID)
-//	defer rows.Close()
-//
-//	for rows.Next() {
-//		err := rows.Scan(&wallet)
-//		if err != nil {
-//			return nil, err
-//		}
-//		wallets = append(wallets, wallet)
-//	}
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//	return wallets, nil
-//}
-//
-//func GetAllWalletsAddresses(db *sql.DB) ([]string, error) {
-//	var wallets []string
-//	var wallet string
-//	rows, err := db.Query("SELECT walletAddress FROM wallets")
-//
-//	defer rows.Close()
-//
-//	for rows.Next() {
-//		err := rows.Scan(&wallet)
-//		if err != nil {
-//			return nil, err
-//		}
-//		wallets = append(wallets, wallet)
-//	}
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//	return wallets, nil
-//}
-//
-//func GetAllWallets(db *sql.DB) ([]DbWallet, error) {
-//	var wallets []DbWallet
-//	var wallet DbWallet
-//	rows, err := db.Query("SELECT * FROM wallets")
-//
-//	defer rows.Close()
-//
-//	for rows.Next() {
-//		err := rows.Scan(&wallet.ID, &wallet.Address, &wallet.UserID, &wallet.ChatID, &wallet.TransactionID, &wallet.UnixTimestamp)
-//		if err != nil {
-//			return nil, err
-//		}
-//		wallets = append(wallets, wallet)
-//	}
-//
-//	if err != nil {
-//		return nil, err
-//	}
-//	return wallets, nil
-//}

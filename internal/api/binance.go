@@ -26,7 +26,7 @@ type (
 		ApiKey    string
 		ApiSecret string
 		BaseUrl   string
-		Cli *binance.Client
+		Cli       *binance.Client
 		httpCli   *http.Client
 	}
 
@@ -49,8 +49,8 @@ type (
 
 	CreateOrderReq struct {
 		PassThroughInfo string `json:"passThroughInfo"`
-		WebhookUrl string `json:"webhookUrl"`
-		Env struct {
+		WebhookUrl      string `json:"webhookUrl"`
+		Env             struct {
 			TerminalType string `json:"terminalType"`
 		} `json:"env"`
 		MerchantTradeNo string  `json:"merchantTradeNo"`
@@ -82,15 +82,10 @@ type (
 )
 
 const (
-	MerchantApiKey = "1q9xg3o42s0qu1gotxkr290za1yqzj4xah4usueic5sfmh8nqm7crgzakify8dzi"
+	MerchantApiKey    = "1q9xg3o42s0qu1gotxkr290za1yqzj4xah4usueic5sfmh8nqm7crgzakify8dzi"
 	MerchantApiSecret = "tu6bzs9bomvbdzcmvlpwgx13yzqmyiefrh9xwjfz62x6odrl8mr1pl8ck6r6xrix"
-	BinanceBaseUrl = "https://fapi.binance.com"
-	BinanceTestBaseUrl = ""
+	BinanceBaseUrl    = "https://fapi.binance.com"
 )
-
-//func ()  {
-//
-//}
 
 func NewBinanceSvc(apiKey, apiSecret string) *BinanceSvc {
 	cli := binance.NewClient(apiKey, apiSecret)
@@ -108,8 +103,7 @@ func NewBinanceSvc(apiKey, apiSecret string) *BinanceSvc {
 func (s *BinanceSvc) ListAllMyTradesForTheWeek(symbol string, startTime, endTime int64) ([]*binance.TradeV3, error) {
 	var allTrades []*binance.TradeV3
 
-	dayEnd := time.Unix(0, startTime*int64(time.Millisecond)).Add(24 * time.Hour).UnixNano()/int64(time.Millisecond)
-
+	dayEnd := time.Unix(0, startTime*int64(time.Millisecond)).Add(24*time.Hour).UnixNano() / int64(time.Millisecond)
 	day := 1
 	for {
 		if day == 8 {
@@ -122,7 +116,7 @@ func (s *BinanceSvc) ListAllMyTradesForTheWeek(symbol string, startTime, endTime
 		allTrades = append(allTrades, trades...)
 		day++
 		startTime = dayEnd
-		dayEnd = time.Unix(0, startTime*int64(time.Millisecond)).Add(24 * time.Hour).UnixNano()/int64(time.Millisecond)
+		dayEnd = time.Unix(0, startTime*int64(time.Millisecond)).Add(24*time.Hour).UnixNano() / int64(time.Millisecond)
 	}
 
 	return allTrades, nil
@@ -210,7 +204,7 @@ func (s *BinanceSvc) GetUserTrades(symbol string, startTime, endTime int64) ([]T
 }
 
 func (s *BinanceSvc) GetPaymentLink(amount float64, userID int64, reportUuid string) (string, error) {
-	fromDate := time.Now().Add(-7*24*time.Hour).Format("2006-01-02")
+	fromDate := time.Now().Add(-7 * 24 * time.Hour).Format("2006-01-02")
 	toDate := time.Now().Format("2006-01-02")
 	path := "https://bpay.binanceapi.com/binancepay/openapi/v2/order"
 	timestamp := getTimestamp()
@@ -297,7 +291,7 @@ func signature(message, secret string) string {
 }
 
 func binancePaySignature(timestamp, nonce, body, secret string) string {
-	payload := timestamp+"\n"+nonce+"\n"+body+"\n"
+	payload := timestamp + "\n" + nonce + "\n" + body + "\n"
 	s := hmac.New(sha512.New, []byte(secret))
 	s.Write([]byte(payload))
 

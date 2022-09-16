@@ -1,6 +1,5 @@
 package bot
 
-
 import (
 	"encoding/json"
 	"fmt"
@@ -18,30 +17,27 @@ type (
 	}
 
 	WebhookResp struct {
-		ReturnCode   string `json:"returnCode"`
+		ReturnCode string `json:"returnCode"`
 	}
 
 	Data struct {
-		MerchantTradeNo   string `json:"merchantTradeNo"`
-		PassThroughInfo      string `json:"passThroughInfo"`
+		MerchantTradeNo string `json:"merchantTradeNo"`
+		PassThroughInfo string `json:"passThroughInfo"`
 	}
 )
 
 func (s *Svc) StartServer() {
 	engine := gin.Default()
 	engine.POST("/payment", s.handlePayment)
-	//engine.GET("/ping", func(context *gin.Context) {
-	//	log.Println("pinged")
-	//})
 
-	fmt.Println( "Starting http server on port :443")
+	fmt.Println("Starting http server on port :443")
 	err := engine.Run(":443")
 	if err != nil {
 		log.Fatal(err)
 	}
 }
 
-func (s *Svc) handlePayment(c *gin.Context)  {
+func (s *Svc) handlePayment(c *gin.Context) {
 	payload := &PaymentWebhook{}
 	if err := json.NewDecoder(c.Request.Body).Decode(&payload); err != nil {
 		c.JSON(http.StatusBadRequest, err.Error())
@@ -57,7 +53,7 @@ func (s *Svc) handlePayment(c *gin.Context)  {
 	log.Print(string(e))
 
 	var (
-		data *Data
+		data     *Data
 		reportID string
 	)
 	err = json.Unmarshal([]byte(payload.Data), &data)
@@ -88,4 +84,3 @@ func (s *Svc) handlePayment(c *gin.Context)  {
 	c.JSON(http.StatusOK, WebhookResp{ReturnCode: "SUCCESS"})
 	return
 }
-

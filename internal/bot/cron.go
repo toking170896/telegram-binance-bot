@@ -28,45 +28,43 @@ func (s *Svc) StartCronJobs() {
 		),
 	)
 
-	cronJob.AddFunc("@every 5s", func() {
+	//every wednesday at 12.00
+	cronJob.AddFunc("0 0 12 * * 3", func() {
 		s.processUsers()
 	})
 
-	//cronJob.AddFunc("@every 15m", func() {
-	//	s.pingService()
-	//})
-
-	//cronJob.AddFunc("@every 5s", func() {
-	//	s.remindAboutThePayment()
-	//})
+	//every friday at 12.00
+	cronJob.AddFunc("0 0 12 * * 5", func() {
+		s.remindAboutThePayment()
+	})
 	cronJob.Start()
 }
 
 func (s *Svc) processUsers() {
 	now := time.Now()
-	startTime := now.Add(-7 * 24 * time.Hour).UnixNano() / int64(time.Millisecond)
+	startTime := now.Add(-7*24*time.Hour).UnixNano() / int64(time.Millisecond)
 	endTime := now.UnixNano() / int64(time.Millisecond)
 
 	users, err := s.DbSvc.GetUsers()
 	if err != nil {
-		log.Println(fmt.Sprintf("Error appered while trying to get users in sendPaymentReport(), Error: %s", err.Error() ))
+		log.Println(fmt.Sprintf("Error appered while trying to get users in sendPaymentReport(), Error: %s", err.Error()))
 		return
 	}
 
 	signals, err := s.DbSvc.GetSignalsSince(startTime)
 	if err != nil {
-		log.Println(fmt.Sprintf("Error appered while trying to get signals in sendPaymentReport(), Error: %s", err.Error() ))
+		log.Println(fmt.Sprintf("Error appered while trying to get signals in sendPaymentReport(), Error: %s", err.Error()))
 		return
 	}
 
 	var (
 		wg         = &sync.WaitGroup{}
-		reports []*sheets.Report
+		reports    []*sheets.Report
 		reportChan = make(chan *sheets.Report)
-	    quit       = make(chan bool)
+		quit       = make(chan bool)
 	)
 
-	for _, u := range users{
+	for _, u := range users {
 		if u.RegistrationTimestamp.String != "" && !u.Blocked.Bool {
 			wg.Add(1)
 			go s.processUser(u, signals, startTime, endTime, wg, reportChan)
@@ -95,11 +93,11 @@ func (s *Svc) processUsers() {
 
 	err = s.GoogleCli.InsertNewRows(reports)
 	if err != nil {
-		log.Println(fmt.Sprintf("Error appeared while trying to insert new rows to sheets, Error: %s", err.Error() ))
+		log.Println(fmt.Sprintf("Error appeared while trying to insert new rows to sheets, Error: %s", err.Error()))
 	}
 }
 
-func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime int64, wg *sync.WaitGroup, reportChan chan *sheets.Report)  {
+func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime int64, wg *sync.WaitGroup, reportChan chan *sheets.Report) {
 	defer wg.Done()
 
 	binanceSvc := api.NewBinanceSvc(user.BinanceApiKey.String, user.BinanceApiSecret.String)
@@ -120,13 +118,13 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 
 		//user trades
 		fee, tradesNum, reportLine := s.processTrades(binanceSvc, startTime, endTime, symbol, user)
-		totalTrades+=tradesNum
+		totalTrades += tradesNum
 		feeSum += fee
 		report += reportLine
 
 		//spot trades
 		fee, tradesNum, reportLine, ids := s.processSpotTrades(binanceSvc, startTime, endTime, symbol, user)
-		totalTrades+=tradesNum
+		totalTrades += tradesNum
 		feeSum += fee
 		report += reportLine
 		notFilledOrderIDs += ids
@@ -139,11 +137,8 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 		log.Println(err)
 	}
 
-
-	feeSum = 0.01
-	if totalTrades > 0 && feeSum >= 0.01{
-		feeSum = math.Round(feeSum*100)/100
-		// or error handling
+	if totalTrades > 0 && feeSum >= 0.01 {
+		feeSum = math.Round(feeSum*100) / 100
 		reportUuid := uuid.NewV4()
 		paymentLink, err := binanceSvc.GetPaymentLink(feeSum, user.UserID.Int64, reportUuid.String())
 		if err != nil {
@@ -164,11 +159,11 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 		}
 
 		reportObj := &sheets.Report{
-			UserID:        user.UserID.Int64,
-			Username:      user.Username.String,
-			Fees:          feeSum,
-			ReportPaid:    "false",
-			UUID:          reportUuid.String(),
+			UserID:     user.UserID.Int64,
+			Username:   user.Username.String,
+			Fees:       feeSum,
+			ReportPaid: "false",
+			UUID:       reportUuid.String(),
 		}
 		reportChan <- reportObj
 
@@ -275,7 +270,7 @@ func (s *Svc) processSpotTrades(binanceSvc *api.BinanceSvc, startTime, endTime i
 			continue
 		}
 
-		profit := currentPrice * executedQty - cumulativeQuoteQty
+		profit := currentPrice*executedQty - cumulativeQuoteQty
 		if profit > 0 {
 			amountOfTrades++
 			fee := s.addFee(user, profit)
@@ -330,14 +325,13 @@ func (s *Svc) addFee(user db.User, realizedPnl float64) float64 {
 	return result
 }
 
-
 func (s *Svc) addReportLine(realizedPnl, fee float64, symbol string, closedDate int64) string {
 	date := time.Unix(0, closedDate*int64(time.Millisecond))
 	return fmt.Sprintf(FeeLineMsgStructure, symbol, date.Format("2006-01-02"), realizedPnl, fee)
 }
 
 func (s *Svc) addStartAndEndToReport(reportLines, paymentLink string, amountOfTrades int, feeSum float64) string {
-	fromDate := time.Now().Add(-7*24*time.Hour).Format("2006-01-02")
+	fromDate := time.Now().Add(-7 * 24 * time.Hour).Format("2006-01-02")
 	toDate := time.Now().Format("2006-01-02")
 
 	reportStart := fmt.Sprintf(ReportStartMsg, fromDate, toDate)
@@ -345,26 +339,3 @@ func (s *Svc) addStartAndEndToReport(reportLines, paymentLink string, amountOfTr
 
 	return reportStart + reportLines + reportEnd
 }
-
-//func (s *Svc) pingService() {
-//	client := &http.Client{}
-//	req, err := http.NewRequest("GET", "", nil)
-//	if err != nil {
-//		fmt.Println(err)
-//	}
-//	req.Close = true
-//
-//	resp, err := client.Do(req)
-//	if err != nil {
-//		fmt.Println(err)
-//	}
-//
-//	defer resp.Body.Close()
-//	bodyBytes, err := ioutil.ReadAll(resp.Body)
-//
-//	if err != nil {
-//		fmt.Println(string(bodyBytes))
-//		fmt.Println(err)
-//	}
-//	return
-//}

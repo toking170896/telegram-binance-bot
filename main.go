@@ -19,15 +19,11 @@ func main() {
 		return
 	}
 
-	//start cronjob, which send fees reports to clients once per week
-	//go svc.StartCronJobs()
+	//start cronjobs
+	go svc.StartCronJobs()
 
 	////start server
 	go svc.StartServer()
 
 	svc.StartBot()
 }
-//ADP1VDs71kkuc0DV9sz4B1Nao37QYiy3eS7Fx3DIM2g3IfjPIALND8VwZO7jmCFP_eUt1nIS6jgsZlABVnykoA0xqKrT9M5E9yZEIKscOoWnNCIrMPC2mqiHwgsxtW2b5
-//ADAUSDT
-//BTCUSDT
-//XRPBUSD
