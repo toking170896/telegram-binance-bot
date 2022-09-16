@@ -29,9 +29,12 @@ type (
 func (s *Svc) StartServer() {
 	engine := gin.Default()
 	engine.POST("/payment", s.handlePayment)
-
-	fmt.Println("Starting http server on port :443")
-	err := engine.Run(":443")
+	engine.GET("/", func(c *gin.Context) {
+		c.JSON(http.StatusOK, "Service is running!")
+		return
+	})
+	fmt.Println("Starting http server on port :8080")
+	err := engine.Run(":8080")
 	if err != nil {
 		log.Fatal(err)
 	}

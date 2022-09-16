@@ -236,7 +236,7 @@ func (s *BinanceSvc) GetPaymentLink(amount float64, userID int64, reportUuid str
 	body.Goods.ReferenceGoodsID = tradeNo.String()
 	body.Goods.GoodsName = "Trading Fees"
 	body.Goods.GoodsDetail = fmt.Sprintf("Trading Fees %s to %s", fromDate, toDate)
-	body.WebhookUrl = "https://5957-145-14-27-211.ngrok.io/payment"
+	body.WebhookUrl = "https://p.grz.media/payment"
 	body.PassThroughInfo = fmt.Sprintf("%d_%s", userID, reportUuid)
 
 	jsonBody, err := json.Marshal(body)

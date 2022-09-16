@@ -1,8 +1,8 @@
 {
-  "token": "5686809988:AAGZCvkr4jlfl0_137rsgZ2_L8KD1rwVXrg",
-  "username": "dpr0xy1user_090",
-  "host": "localhost:3306",
-  "password": "Hs8347GDGgbhjsjzutghZJKFGdfluGui867hUG",
+  "token": "5715270111:AAEqQdnKA7qU3nRNi49DS8sahjBo8skG3HQ",
+  "username": "prxodb01user",
+  "host": "db-mysql-ams3-96596-do-user-7636665-0.b.db.ondigitalocean.com",
+  "password": "AVNS_TE86BaLX1Lv7FEkwMcM",
   "chatID": -1001574948817,
   "db": "prx01db"
 }
