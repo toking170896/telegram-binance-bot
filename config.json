@@ -1,8 +1,17 @@
 {
+<<<<<<< HEAD
   "token": "5715270111:AAEqQdnKA7qU3nRNi49DS8sahjBo8skG3HQ",
   "username": "prxodb01user",
   "host": "db-mysql-ams3-96596-do-user-7636665-0.b.db.ondigitalocean.com:25060",
   "password": "AVNS_TE86BaLX1Lv7FEkwMcM",
   "chatID": -1001574948817,
   "db": "prx01db"
+=======
+  "token": "",
+  "username": "",
+  "host": "",
+  "password": "",
+  "chatID": 6,
+  "db": ""
+>>>>>>> origin/main
 }
