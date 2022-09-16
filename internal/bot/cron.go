@@ -349,7 +349,7 @@ func (s *Svc) addStartAndEndToReport(reportLines, paymentLink string, amountOfTr
 
 func PingService() {
 	client := &http.Client{}
-	req, err := http.NewRequest("GET", "https://monkfish-app-9vx5e.ondigitalocean.app", nil)
+	req, err := http.NewRequest("GET", "https://prx-bot.herokuapp.com", nil)
 	if err != nil {
 		fmt.Println(err)
 	}
