@@ -6,8 +6,10 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/robfig/cron/v3"
 	"github.com/satori/go.uuid"
+	"io/ioutil"
 	"log"
 	"math"
+	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -36,6 +38,11 @@ func (s *Svc) StartCronJobs() {
 	//every friday at 12.00
 	cronJob.AddFunc("0 0 12 * * 5", func() {
 		s.remindAboutThePayment()
+	})
+
+	//ping service
+	cronJob.AddFunc("@every 15m", func() {
+		PingService()
 	})
 	cronJob.Start()
 }
@@ -338,4 +345,27 @@ func (s *Svc) addStartAndEndToReport(reportLines, paymentLink string, amountOfTr
 	reportEnd := fmt.Sprintf(ReportEndMsg, amountOfTrades, feeSum, paymentLink)
 
 	return reportStart + reportLines + reportEnd
+}
+
+func PingService() {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", "https://monkfish-app-9vx5e.ondigitalocean.app", nil)
+	if err != nil {
+		fmt.Println(err)
+	}
+	req.Close = true
+
+	resp, err := client.Do(req)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	defer resp.Body.Close()
+	bodyBytes, err := ioutil.ReadAll(resp.Body)
+
+	if err != nil {
+		fmt.Println(string(bodyBytes))
+		fmt.Println(err)
+	}
+	return
 }
