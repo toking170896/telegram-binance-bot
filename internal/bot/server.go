@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 )
 
@@ -33,8 +34,14 @@ func (s *Svc) StartServer() {
 		c.JSON(http.StatusOK, "Service is running!")
 		return
 	})
-	fmt.Println("Starting http server on port :8080")
-	err := engine.Run(":8080")
+
+	port := os.Getenv("PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	fmt.Println("Starting http server on port :" + port)
+	err := engine.Run(":" + port)
 	if err != nil {
 		log.Fatal(err)
 	}
