@@ -44,7 +44,7 @@ func (s *Svc) StartCronJobs() {
 // 		s.remindAboutThePayment()
 // 	})
 
-	cronJob.AddFunc("0 0 12 * * *", func() {
+	cronJob.AddFunc("0 0 15 * * *", func() {
 		s.remindAboutThePayment()
 	})
 
