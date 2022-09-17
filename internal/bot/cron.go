@@ -35,7 +35,8 @@ func (s *Svc) StartCronJobs() {
 // 		s.processUsers()
 // 	})
 	
-	cronJob.AddFunc("0 0 12 * * *", func() {
+	cronJob.AddFunc("0 10 9 * * *", func() {
+		log.Println("Start report sync")
 		s.processUsers()
 	})
 
@@ -44,7 +45,8 @@ func (s *Svc) StartCronJobs() {
 // 		s.remindAboutThePayment()
 // 	})
 
-	cronJob.AddFunc("0 0 15 * * *", func() {
+	cronJob.AddFunc("0 10 12 * * *", func() {
+		log.Println("Start reminder sync")
 		s.remindAboutThePayment()
 	})
 
