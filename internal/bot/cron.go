@@ -31,12 +31,22 @@ func (s *Svc) StartCronJobs() {
 	)
 
 	//every wednesday at 12.00
-	cronJob.AddFunc("0 0 12 * * 3", func() {
+// 	cronJob.AddFunc("0 0 12 * * 3", func() {
+// 		s.processUsers()
+// 	})
+	
+	cronJob.AddFunc("0 10 9 * * *", func() {
+		log.Println("Start report sync")
 		s.processUsers()
 	})
 
 	//every friday at 12.00
-	cronJob.AddFunc("0 0 12 * * 5", func() {
+// 	cronJob.AddFunc("0 0 12 * * 5", func() {
+// 		s.remindAboutThePayment()
+// 	})
+
+	cronJob.AddFunc("0 10 12 * * *", func() {
+		log.Println("Start reminder sync")
 		s.remindAboutThePayment()
 	})
 

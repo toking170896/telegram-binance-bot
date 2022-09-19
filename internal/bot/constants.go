@@ -2,7 +2,7 @@ package bot
 
 //messages
 const (
-	EmptyUsernameErr = "Your username is not set up in Telegram, in order to continue please setup a username after that type /start or click [hyperlink-start]"
+	EmptyUsernameErr = " Your username is not set up in Telegram, in order to continue please setup a username after that type /start or click [hyperlink-start]"
 	AcceptTermsMsg = "In order to activate you agree to our Terms of Service and Disclaimer which can be found here:\n\nTOS: www.domain.com/tos\nDisclaimer: www.domain.com/disclaimer\n"
 	DeniedTermsErr = "You have to accept our tos and disclaimer to continue."
 	InsertLicenseKeyMsg = "Please insert a license key:"
