@@ -7,7 +7,7 @@ import (
 	"telegram-signals-bot/internal/api"
 )
 
-func (s *Svc) ValidateBinanceApiKeys(msg string, userID int64) {
+func (s *Svc) ValidateBinanceApiKeys(msg string, userID string) {
 	var apiKey, apiSecret string
 	if strings.Contains(msg, "_") {
 		position := strings.LastIndex(msg, "_")
@@ -45,7 +45,7 @@ func (s *Svc) ValidateBinanceApiKeys(msg string, userID int64) {
 	}
 }
 
-func (s *Svc) ValidateLicenseKey(msg, username string, userID int64) {
+func (s *Svc) ValidateLicenseKey(msg, username string, userID string) {
 	//check if license key record exists in DB
 	user, err := s.DbSvc.GetUserByLicenseKey(msg)
 	if err != nil {

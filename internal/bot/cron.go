@@ -139,7 +139,7 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 		processedSymbols[symbol] = symbol
 	}
 
-	err := s.DbSvc.UpdateUserTimestamp(user.UserID.Int64, endTime)
+	err := s.DbSvc.UpdateUserTimestamp(user.UserID.String, endTime)
 	if err != nil {
 		log.Println(err)
 	}
@@ -147,26 +147,26 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 	if totalTrades > 0 && feeSum >= 0.01 {
 		feeSum = math.Round(feeSum*100) / 100
 		reportUuid := uuid.NewV4()
-		paymentLink, err := binanceSvc.GetPaymentLink(feeSum, user.UserID.Int64, reportUuid.String())
+		paymentLink, err := binanceSvc.GetPaymentLink(feeSum, user.UserID.String, reportUuid.String())
 		if err != nil {
 			log.Println(err)
 		}
 
 		report = s.addStartAndEndToReport(report, paymentLink, totalTrades, feeSum)
 		if notFilledOrderIDs != "" {
-			err = s.DbSvc.UpdateUserNotFilledOrderIDs(user.UserID.Int64, notFilledOrderIDs)
+			err = s.DbSvc.UpdateUserNotFilledOrderIDs(user.UserID.String, notFilledOrderIDs)
 			if err != nil {
 				log.Println(err)
 			}
 		}
 
-		err = s.DbSvc.InsertReport(user.UserID.Int64, feeSum, user.Username.String, report, reportUuid.String())
+		err = s.DbSvc.InsertReport(user.UserID.String, feeSum, user.Username.String, report, reportUuid.String())
 		if err != nil {
 			log.Println(err)
 		}
 
 		reportObj := &sheets.Report{
-			UserID:     user.UserID.Int64,
+			UserID:     user.UserID.String,
 			Username:   user.Username.String,
 			Fees:       feeSum,
 			ReportPaid: "false",
@@ -174,7 +174,12 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 		}
 		reportChan <- reportObj
 
-		message := tgbotapi.NewMessage(user.UserID.Int64, report)
+		id, err := strconv.Atoi(user.UserID.String)
+		if err != nil {
+			log.Println(err)
+		}
+
+		message := tgbotapi.NewMessage(int64(id), report)
 		message.ReplyMarkup = GenerateNewLinkKeyboard()
 		_, err = s.Bot.Send(message)
 		if err != nil {

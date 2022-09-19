@@ -8,77 +8,89 @@ import (
 	"telegram-signals-bot/internal/api"
 )
 
-func (s *Svc) acceptTerms(userID int64) {
-	message := tgbotapi.NewMessage(userID, AcceptTermsMsg)
+func (s *Svc) acceptTerms(userID string) {
+	id, err := strconv.Atoi(userID)
+	if err != nil {
+		log.Print(fmt.Sprintf("UserID %s got such an error: %s", userID, err.Error()))
+	}
+	message := tgbotapi.NewMessage(int64(id), AcceptTermsMsg)
 	message.ReplyMarkup = AcceptTermsKeyboard()
 
-	_, err := s.Bot.Send(message)
+	_, err = s.Bot.Send(message)
 	if err != nil {
-		log.Print(fmt.Sprintf("UserID %d got such an error: %s", userID, err.Error()))
+		log.Print(fmt.Sprintf("UserID %s got such an error: %s", userID, err.Error()))
 	}
 }
 
-func (s *Svc) termsDeniedByUser(userID int64) {
+func (s *Svc) termsDeniedByUser(userID string) {
 	s.sendMsg(userID, DeniedTermsErr)
 	s.acceptTerms(userID)
 	s.updateUserState(userID, DenyTermsState)
 }
 
-func (s *Svc) insertLicenseKey(userID int64) {
+func (s *Svc) insertLicenseKey(userID string) {
 	s.sendMsg(userID, InsertLicenseKeyMsg)
 	s.updateUserState(userID, InsertLicenseKeyState)
 }
 
-func (s *Svc) invalidLicenseKey(userID int64) {
+func (s *Svc) invalidLicenseKey(userID string) {
 	s.sendMsg(userID, InvalidLicenseKeyMsg)
 	s.insertLicenseKey(userID)
 	s.updateUserState(userID, InvalidLicenseKey)
 }
 
-func (s *Svc) acceptFees(userID int64) {
-	message := tgbotapi.NewMessage(userID, ValidLicenseKeyMsg)
-	message.ReplyMarkup = AcceptFeesKeyboard()
-	_, err := s.Bot.Send(message)
+func (s *Svc) acceptFees(userID string) {
+	id, err := strconv.Atoi(userID)
 	if err != nil {
-		log.Print(fmt.Sprintf("UserID %d got such an error: %s", userID, err.Error()))
+		log.Print(fmt.Sprintf("UserID %s got such an error: %s", userID, err.Error()))
+	}
+	message := tgbotapi.NewMessage(int64(id), ValidLicenseKeyMsg)
+	message.ReplyMarkup = AcceptFeesKeyboard()
+	_, err = s.Bot.Send(message)
+	if err != nil {
+		log.Print(fmt.Sprintf("UserID %s got such an error: %s", userID, err.Error()))
 	}
 
 	s.updateUserState(userID, ValidLicenseKey)
 }
 
-func (s *Svc) acceptFeesRetry(userID int64) {
-	message := tgbotapi.NewMessage(userID, AcceptFeesRetryMsg)
-	message.ReplyMarkup = AcceptFeesKeyboard()
-	_, err := s.Bot.Send(message)
+func (s *Svc) acceptFeesRetry(userID string) {
+	id, err := strconv.Atoi(userID)
 	if err != nil {
-		log.Print(fmt.Sprintf("UserID %d got such an error: %s", userID, err.Error()))
+		log.Print(fmt.Sprintf("UserID %s got such an error: %s", userID, err.Error()))
+	}
+	message := tgbotapi.NewMessage(int64(id), AcceptFeesRetryMsg)
+	message.ReplyMarkup = AcceptFeesKeyboard()
+	_, err = s.Bot.Send(message)
+	if err != nil {
+		log.Print(fmt.Sprintf("UserID %s got such an error: %s", userID, err.Error()))
 	}
 
 	s.updateUserState(userID, ValidLicenseKey)
 }
 
-func (s *Svc) feesDeniedByUser(userID int64) {
+func (s *Svc) feesDeniedByUser(userID string) {
 	s.sendMsg(userID, DeniedFeesMsg)
 	s.insertBinanceKeys(userID)
 }
 
-func (s *Svc) insertBinanceKeys(userID int64) {
+func (s *Svc) insertBinanceKeys(userID string) {
 	s.sendMsg(userID, InsertBinanceKeyMsg)
 	s.updateUserState(userID, InsertBinanceKeysState)
 }
 
-func (s *Svc) validBinanceKeys(userID int64, inviteUrl string) {
+func (s *Svc) validBinanceKeys(userID string, inviteUrl string) {
 	s.sendMsg(userID, fmt.Sprintf(ValidBinanceKeysMsg, inviteUrl))
-	s.States.Remove(strconv.Itoa(int(userID)))
+	s.States.Remove(userID)
 }
 
-func (s *Svc) invalidBinanceKeys(userID int64) {
+func (s *Svc) invalidBinanceKeys(userID string) {
 	s.sendMsg(userID, InvalidBinanceKeysMsg)
 	s.insertBinanceKeys(userID)
 	s.updateUserState(userID, InvalidBinanceKeys)
 }
 
-func (s *Svc) generatePaymentLink(userID int64) {
+func (s *Svc) generatePaymentLink(userID string) {
 	report, err := s.DbSvc.GetLastUserReport(userID)
 	if err != nil {
 		log.Println(err)

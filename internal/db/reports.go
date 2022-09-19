@@ -6,20 +6,20 @@ import (
 	"time"
 )
 
-type(
+type (
 	Report struct {
-		ID               int    `db:"id,omitempty"`
-		UserID           sql.NullInt64 `db:"userID,omitempty"`
-		Username         sql.NullString `db:"username,omitempty"`
-		Fees             sql.NullFloat64 `db:"fees,omitempty"`
-		Timestamp        sql.NullString  `db:"timestamp,omitempty"`
-		ReportInfo       sql.NullString  `db:"reportInfo,omitempty"`
-		Paid             sql.NullBool  `db:"paid,omitempty"`
-		UUID             sql.NullString  `db:"uuid,omitempty"`
+		ID         int             `db:"id,omitempty"`
+		UserID     sql.NullString  `db:"userID,omitempty"`
+		Username   sql.NullString  `db:"username,omitempty"`
+		Fees       sql.NullFloat64 `db:"fees,omitempty"`
+		Timestamp  sql.NullString  `db:"timestamp,omitempty"`
+		ReportInfo sql.NullString  `db:"reportInfo,omitempty"`
+		Paid       sql.NullBool    `db:"paid,omitempty"`
+		UUID       sql.NullString  `db:"uuid,omitempty"`
 	}
 )
 
-func (s *Svc) InsertReport(userID int64, fees float64, username, reportInfo, uuid string) error {
+func (s *Svc) InsertReport(userID string, fees float64, username, reportInfo, uuid string) error {
 	unix := strconv.Itoa(int(time.Now().UnixNano()))
 	_, err := s.Db.Exec("INSERT INTO reports (username, userID, timestamp, reportInfo, fees, uuid) values (?, ?, ?, ?, ?, ?)", username, userID, unix, reportInfo, fees, uuid)
 	if err != nil {
@@ -28,9 +28,9 @@ func (s *Svc) InsertReport(userID int64, fees float64, username, reportInfo, uui
 	return nil
 }
 
-func (s *Svc) GetLastUserReport(userID int64) (*Report, error) {
+func (s *Svc) GetLastUserReport(userID string) (*Report, error) {
 	var report *Report
-	rows, err := s.Db.Query("SELECT * FROM reports where userID = ? ORDER BY timestamp DESC LIMIT 1", int(userID))
+	rows, err := s.Db.Query("SELECT * FROM reports where userID = ? ORDER BY timestamp DESC LIMIT 1", userID)
 	if err != nil {
 		return nil, err
 	}

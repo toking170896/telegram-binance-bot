@@ -5,6 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	_ "github.com/mattn/go-sqlite3"
 	"log"
+	"strconv"
 	"strings"
 )
 
@@ -51,7 +52,7 @@ func (s *Svc) processMsg(update tgbotapi.Update) {
 		}
 	}
 
-	userID := update.Message.Chat.ID
+	userID := strconv.Itoa(int(update.Message.Chat.ID))
 	//if username is empty ask user to set it up and repeat
 	if update.Message.From.UserName == "" {
 		s.sendMsg(userID, EmptyUsernameErr)
@@ -89,7 +90,7 @@ func (s *Svc) processMsg(update tgbotapi.Update) {
 }
 
 func (s *Svc) processCallbackQuery(update tgbotapi.Update) {
-	userID := int64(update.CallbackQuery.From.ID)
+	userID := strconv.Itoa(update.CallbackQuery.From.ID)
 
 	switch update.CallbackQuery.Data {
 	case AcceptTermsState:
@@ -121,7 +122,7 @@ func (s *Svc) processCallbackQuery(update tgbotapi.Update) {
 	}
 }
 
-func (s *Svc) processSignal(msg string)  {
+func (s *Svc) processSignal(msg string) {
 	var prevLine, symbol string
 	var symbolLine bool
 
@@ -145,10 +146,14 @@ func (s *Svc) processSignal(msg string)  {
 	}
 }
 
-func (s *Svc) sendMsg(userID int64, text string) {
-	message := tgbotapi.NewMessage(userID, text)
-	_, err := s.Bot.Send(message)
+func (s *Svc) sendMsg(userID, text string) {
+	id, err := strconv.Atoi(userID)
 	if err != nil {
-		log.Print(fmt.Sprintf("UserID %d got such an error: %s", userID, err.Error()))
+		log.Print(fmt.Sprintf("UserID %s got such an error: %s", userID, err.Error()))
+	}
+	message := tgbotapi.NewMessage(int64(id), text)
+	_, err = s.Bot.Send(message)
+	if err != nil {
+		log.Print(fmt.Sprintf("UserID %s got such an error: %s", userID, err.Error()))
 	}
 }

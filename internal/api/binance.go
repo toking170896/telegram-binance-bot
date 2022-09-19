@@ -203,7 +203,7 @@ func (s *BinanceSvc) GetUserTrades(symbol string, startTime, endTime int64) ([]T
 
 }
 
-func (s *BinanceSvc) GetPaymentLink(amount float64, userID int64, reportUuid string) (string, error) {
+func (s *BinanceSvc) GetPaymentLink(amount float64, userID, reportUuid string) (string, error) {
 	fromDate := time.Now().Add(-7 * 24 * time.Hour).Format("2006-01-02")
 	toDate := time.Now().Format("2006-01-02")
 	path := "https://bpay.binanceapi.com/binancepay/openapi/v2/order"
@@ -237,7 +237,7 @@ func (s *BinanceSvc) GetPaymentLink(amount float64, userID int64, reportUuid str
 	body.Goods.GoodsName = "Trading Fees"
 	body.Goods.GoodsDetail = fmt.Sprintf("Trading Fees %s to %s", fromDate, toDate)
 	body.WebhookUrl = "https://p.grz.media/payment"
-	body.PassThroughInfo = fmt.Sprintf("%d_%s", userID, reportUuid)
+	body.PassThroughInfo = fmt.Sprintf("%s_%s", userID, reportUuid)
 
 	jsonBody, err := json.Marshal(body)
 	if err != nil {

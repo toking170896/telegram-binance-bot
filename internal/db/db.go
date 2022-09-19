@@ -22,7 +22,7 @@ func OpenDatabase(c *config.Config) (*Svc, error) {
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS users (" +
 		"id int primary key auto_increment, " +
 		"username text, " +
-		"userID int, " +
+		"userID text, " +
 		"rulesAccepted boolean, " +
 		"blocked boolean, " +
 		"licenseKey text, " +
@@ -48,7 +48,7 @@ func OpenDatabase(c *config.Config) (*Svc, error) {
 		"id int primary key auto_increment, " +
 		"uuid text, " +
 		"username text, " +
-		"userID int, " +
+		"userID text, " +
 		"reportInfo text, " +
 		"paid boolean, " +
 		"fees text, " +

@@ -30,12 +30,12 @@ type (
 	}
 
 	Report struct {
-		UserID           int64 `json:"userID,omitempty"`
-		Username         string `json:"username,omitempty"`
-		Fees             float64 `json:"fees,omitempty"`
-		ReportCreated    string `json:"reportCreated,omitempty"`
-		ReportPaid       string `json:"reportPaid,omitempty"`
-		UUID             string `json:"uuid,omitempty"`
+		UserID        string  `json:"userID,omitempty"`
+		Username      string  `json:"username,omitempty"`
+		Fees          float64 `json:"fees,omitempty"`
+		ReportCreated string  `json:"reportCreated,omitempty"`
+		ReportPaid    string  `json:"reportPaid,omitempty"`
+		UUID          string  `json:"uuid,omitempty"`
 	}
 )
 
@@ -52,10 +52,10 @@ func NewGoogleClient() (*GoogleCli, error) {
 	}
 
 	svc := &GoogleCli{
-		Svc: service,
+		Svc:           service,
 		SpreadSheetID: "1wTk6czcyFBOlO5ak1HNWZEjW4cCPkBsJRPVjhCmbNyY",
-		SheetName: "reports",
-		V4Svc: v4Svc,
+		SheetName:     "reports",
+		V4Svc:         v4Svc,
 	}
 
 	sheet, err := svc.getSheet()
@@ -98,7 +98,7 @@ func (s *GoogleCli) getSheet() (*spreadsheet.Sheet, error) {
 }
 
 func (s *GoogleCli) InsertNewRows(reports []*Report) error {
-	for _, report := range reports{
+	for _, report := range reports {
 		reportCreated := time.Now().Format(time.RFC3339)
 		req := &SpreadsheetPushRequest{
 			SpreadsheetId: s.SpreadSheetID,
