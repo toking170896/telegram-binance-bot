@@ -110,5 +110,14 @@ func (s *Svc) generatePaymentLink(userID string) {
 		s.sendMsg(userID, err.Error())
 	}
 
-	s.sendMsg(userID, fmt.Sprintf(NewlyGeneratedPaymentLinkMsg, paymentLink))
+	id, err := strconv.Atoi(userID)
+	if err != nil {
+		log.Print(fmt.Sprintf("UserID %s got such an error: %s", userID, err.Error()))
+	}
+	message := tgbotapi.NewMessage(int64(id), NewlyGeneratedPaymentLinkMsg)
+	message.ReplyMarkup = GenerateNewLinkKeyboard(paymentLink)
+	_, err = s.Bot.Send(message)
+	if err != nil {
+		log.Print(fmt.Sprintf("UserID %s got such an error: %s", userID, err.Error()))
+	}
 }

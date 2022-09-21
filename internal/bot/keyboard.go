@@ -22,8 +22,9 @@ func AcceptFeesKeyboard() interface{} {
 	return keyboard
 }
 
-func GenerateNewLinkKeyboard() interface{} {
+func GenerateNewLinkKeyboard(paymentLink string) interface{} {
 	var keys []tgbotapi.InlineKeyboardButton
+	keys = append(keys, tgbotapi.NewInlineKeyboardButtonURL("Pay Now", paymentLink))
 	keys = append(keys, tgbotapi.NewInlineKeyboardButtonData("Generate new payment link", GeneratePaymentLinkState))
 
 	keyboard := tgbotapi.NewInlineKeyboardMarkup(keys)

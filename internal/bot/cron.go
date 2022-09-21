@@ -31,19 +31,19 @@ func (s *Svc) StartCronJobs() {
 	)
 
 	//every wednesday at 12.00
-// 	cronJob.AddFunc("0 0 12 * * 3", func() {
-// 		s.processUsers()
-// 	})
-	
+	// 	cronJob.AddFunc("0 0 12 * * 3", func() {
+	// 		s.processUsers()
+	// 	})
+
 	cronJob.AddFunc("0 10 9 * * *", func() {
 		log.Println("Start report sync")
 		s.processUsers()
 	})
 
 	//every friday at 12.00
-// 	cronJob.AddFunc("0 0 12 * * 5", func() {
-// 		s.remindAboutThePayment()
-// 	})
+	// 	cronJob.AddFunc("0 0 12 * * 5", func() {
+	// 		s.remindAboutThePayment()
+	// 	})
 
 	cronJob.AddFunc("0 10 12 * * *", func() {
 		log.Println("Start reminder sync")
@@ -162,7 +162,7 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 			log.Println(err)
 		}
 
-		report = s.addStartAndEndToReport(report, paymentLink, totalTrades, feeSum)
+		report = s.addStartAndEndToReport(report, totalTrades, feeSum)
 		if notFilledOrderIDs != "" {
 			err = s.DbSvc.UpdateUserNotFilledOrderIDs(user.UserID.String, notFilledOrderIDs)
 			if err != nil {
@@ -190,7 +190,7 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 		}
 
 		message := tgbotapi.NewMessage(int64(id), report)
-		message.ReplyMarkup = GenerateNewLinkKeyboard()
+		message.ReplyMarkup = GenerateNewLinkKeyboard(paymentLink)
 		_, err = s.Bot.Send(message)
 		if err != nil {
 			log.Println(err)
@@ -208,18 +208,51 @@ func (s *Svc) processTrades(binanceSvc *api.BinanceSvc, startTime, endTime int64
 		log.Println(err)
 	}
 
+	orders := make(map[int]float64)
 	for _, t := range trades {
-		realizedPnl, err := strconv.ParseFloat(t.RealizedPnl, 64)
-		if err != nil {
-			log.Println(err)
-		}
-		if realizedPnl > 0 {
-			amountOfTrades++
-			fee := s.addFee(user, realizedPnl)
-			feeSum += fee
-			report += s.addReportLine(realizedPnl, fee, symbol, t.Time)
+		if _, found := orders[t.OrderID]; !found {
+			orders[t.OrderID] = 0
 		}
 	}
+
+	for orderID, _ := range orders {
+		var closedTime int64
+		var orderFee, orderRealizedPnl float64
+		for _, t := range trades {
+			if t.OrderID != orderID {
+				continue
+			}
+			realizedPnl, err := strconv.ParseFloat(t.RealizedPnl, 64)
+			if err != nil {
+				log.Println(err)
+			}
+			if realizedPnl > 0 {
+				fee := s.addFee(user, realizedPnl)
+				orderRealizedPnl += realizedPnl
+				orderFee += fee
+				closedTime = t.Time
+			}
+		}
+
+		if orderFee > 0 {
+			amountOfTrades++
+			feeSum += orderFee
+			report += s.addReportLine(orderRealizedPnl, orderFee, symbol, closedTime)
+		}
+	}
+
+	//for _, t := range trades {
+	//	realizedPnl, err := strconv.ParseFloat(t.RealizedPnl, 64)
+	//	if err != nil {
+	//		log.Println(err)
+	//	}
+	//	if realizedPnl > 0 {
+	//		amountOfTrades++
+	//		fee := s.addFee(user, realizedPnl)
+	//		feeSum += fee
+	//		report += s.addReportLine(realizedPnl, fee, symbol, t.Time)
+	//	}
+	//}
 
 	return feeSum, amountOfTrades, report
 }
@@ -352,12 +385,12 @@ func (s *Svc) addReportLine(realizedPnl, fee float64, symbol string, closedDate 
 	return fmt.Sprintf(FeeLineMsgStructure, symbol, date.Format("2006-01-02"), realizedPnl, fee)
 }
 
-func (s *Svc) addStartAndEndToReport(reportLines, paymentLink string, amountOfTrades int, feeSum float64) string {
+func (s *Svc) addStartAndEndToReport(reportLines string, amountOfTrades int, feeSum float64) string {
 	fromDate := time.Now().Add(-7 * 24 * time.Hour).Format("2006-01-02")
 	toDate := time.Now().Format("2006-01-02")
 
 	reportStart := fmt.Sprintf(ReportStartMsg, fromDate, toDate)
-	reportEnd := fmt.Sprintf(ReportEndMsg, amountOfTrades, feeSum, paymentLink)
+	reportEnd := fmt.Sprintf(ReportEndMsg, amountOfTrades, feeSum)
 
 	return reportStart + reportLines + reportEnd
 }
