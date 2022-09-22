@@ -14,10 +14,10 @@ const (
 	InvalidBinanceKeysMsg = "Unfortunately your Binance api keys are invalid, please check if the format is correct and try once again."
 	FeeLineMsgStructure   = "TRADE: %s\n\nCLOSED DATE: %s\n\nPROFIT: %.4f\n\nFEE: %.4f\n-----------------------------------\n\n"
 	ReportStartMsg        = "FEE OVERVIEW - %s - %s\n\n"
-	ReportEndMsg          = "\nSummary:\n\nBased on %d amount of trades your open fees: $%.2f\n\nPlease transfer the open fee within the next 45 hours." +
+	ReportEndMsg          = "\nSummary:\n\nBased on %d amount of trades your profit: $%.2f, open fees: $%.2f\n\nPlease transfer the open fee within the next 45 hours." +
 		" Otherwise your account will be banned."
 	NewlyGeneratedPaymentLinkMsg = "New payment link was generated. Please transfer the open fee. Otherwise your account will be banned."
-	PaymentReminderMsg           = "We have not received your payment. If we won't receive your payment within the next 12 hours your account will be banned. \n\n %s"
+	PaymentReminderMsg           = "We have not received your payment. If we won't receive your payment within the next 12 hours your account will be banned. \n\n"
 )
 
 var (

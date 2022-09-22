@@ -41,9 +41,16 @@ func (s *Svc) remindUser(user db.User) {
 			log.Println(err)
 		}
 
-		message := tgbotapi.NewMessage(int64(id), fmt.Sprintf(PaymentReminderMsg, report.ReportInfo.String))
+		message := tgbotapi.NewMessage(int64(id), PaymentReminderMsg)
 		message.ReplyMarkup = GenerateNewLinkKeyboard(paymentLink)
 		_, err = s.Bot.Send(message)
+		if err != nil {
+			log.Println(err)
+		}
+
+		s.CreateFile(report.ReportInfo.String, user.UserID.String)
+		reportFile := tgbotapi.NewDocumentUpload(int64(id), fmt.Sprintf("./%s_report.txt", user.UserID.String))
+		_, err = s.Bot.Send(reportFile)
 		if err != nil {
 			log.Println(err)
 		}

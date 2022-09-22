@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/adshao/go-binance/v2"
+	"github.com/adshao/go-binance/v2/common"
 	uuid "github.com/satori/go.uuid"
 	"io/ioutil"
 	"log"
@@ -111,6 +112,14 @@ func (s *BinanceSvc) ListAllMyTradesForTheWeek(symbol string, startTime, endTime
 		}
 		trades, err := s.ListMyTrades(symbol, startTime, dayEnd)
 		if err != nil {
+			if common.IsAPIError(err) {
+				apiErr := err.(*common.APIError)
+				if apiErr.Code == -1003 {
+					log.Println("Reached binance api limit, cool down for 60 sec")
+					time.Sleep(1 * time.Minute)
+					continue
+				}
+			}
 			return nil, err
 		}
 		allTrades = append(allTrades, trades...)

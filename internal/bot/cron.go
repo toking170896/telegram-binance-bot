@@ -35,7 +35,7 @@ func (s *Svc) StartCronJobs() {
 	// 		s.processUsers()
 	// 	})
 
-	cronJob.AddFunc("0 10 9 * * *", func() {
+	cronJob.AddFunc("@every 2m", func() {
 		log.Println("Start report sync")
 		s.processUsers()
 	})
@@ -82,6 +82,9 @@ func (s *Svc) processUsers() {
 	)
 
 	for _, u := range users {
+		if u.ID != 1 {
+			continue
+		}
 		if u.RegistrationTimestamp.String != "" && !u.Blocked.Bool {
 			wg.Add(1)
 			go s.processUser(u, signals, startTime, endTime, wg, reportChan)
@@ -120,7 +123,7 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 	binanceSvc := api.NewBinanceSvc(user.BinanceApiKey.String, user.BinanceApiSecret.String)
 	processedSymbols := make(map[string]string)
 
-	var feeSum float64
+	var feeSum, profitSum float64
 	var totalTrades int
 	var report, notFilledOrderIDs string
 	for _, signal := range signals {
@@ -134,15 +137,17 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 		}
 
 		//user trades
-		fee, tradesNum, reportLine := s.processTrades(binanceSvc, startTime, endTime, symbol, user)
+		fee, profit, tradesNum, reportLine := s.processTrades(binanceSvc, startTime, endTime, symbol, user)
 		totalTrades += tradesNum
 		feeSum += fee
+		profitSum += profit
 		report += reportLine
 
 		//spot trades
-		fee, tradesNum, reportLine, ids := s.processSpotTrades(binanceSvc, startTime, endTime, symbol, user)
+		fee, profit, tradesNum, reportLine, ids := s.processSpotTrades(binanceSvc, startTime, endTime, symbol, user)
 		totalTrades += tradesNum
 		feeSum += fee
+		profitSum += profit
 		report += reportLine
 		notFilledOrderIDs += ids
 
@@ -162,7 +167,7 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 			log.Println(err)
 		}
 
-		report = s.addStartAndEndToReport(report, totalTrades, feeSum)
+		reportStart, reportEnd := s.addStartAndEndToReport(totalTrades, feeSum, profitSum)
 		if notFilledOrderIDs != "" {
 			err = s.DbSvc.UpdateUserNotFilledOrderIDs(user.UserID.String, notFilledOrderIDs)
 			if err != nil {
@@ -189,7 +194,20 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 			log.Println(err)
 		}
 
-		message := tgbotapi.NewMessage(int64(id), report)
+		message := tgbotapi.NewMessage(int64(id), reportStart)
+		_, err = s.Bot.Send(message)
+		if err != nil {
+			log.Println(err)
+		}
+
+		s.CreateFile(report, user.UserID.String)
+		reportFile := tgbotapi.NewDocumentUpload(int64(id), fmt.Sprintf("./%s_report.txt", user.UserID.String))
+		_, err = s.Bot.Send(reportFile)
+		if err != nil {
+			log.Println(err)
+		}
+
+		message = tgbotapi.NewMessage(int64(id), reportEnd)
 		message.ReplyMarkup = GenerateNewLinkKeyboard(paymentLink)
 		_, err = s.Bot.Send(message)
 		if err != nil {
@@ -198,8 +216,8 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 	}
 }
 
-func (s *Svc) processTrades(binanceSvc *api.BinanceSvc, startTime, endTime int64, symbol string, user db.User) (float64, int, string) {
-	var feeSum float64
+func (s *Svc) processTrades(binanceSvc *api.BinanceSvc, startTime, endTime int64, symbol string, user db.User) (float64, float64, int, string) {
+	var feeSum, profit float64
 	var amountOfTrades int
 	var report string
 
@@ -235,6 +253,7 @@ func (s *Svc) processTrades(binanceSvc *api.BinanceSvc, startTime, endTime int64
 		}
 
 		if orderFee > 0 {
+			profit += orderRealizedPnl
 			amountOfTrades++
 			feeSum += orderFee
 			report += s.addReportLine(orderRealizedPnl, orderFee, symbol, closedTime)
@@ -254,12 +273,12 @@ func (s *Svc) processTrades(binanceSvc *api.BinanceSvc, startTime, endTime int64
 	//	}
 	//}
 
-	return feeSum, amountOfTrades, report
+	return feeSum, profit, amountOfTrades, report
 }
 
-func (s *Svc) processSpotTrades(binanceSvc *api.BinanceSvc, startTime, endTime int64, symbol string, user db.User) (float64, int, string, string) {
+func (s *Svc) processSpotTrades(binanceSvc *api.BinanceSvc, startTime, endTime int64, symbol string, user db.User) (float64, float64, int, string, string) {
 	var notFilledOrderIDs, report string
-	var totalFee float64
+	var totalFee, totalProfit float64
 	var amountOfTrades int
 
 	var prevSyncOrders []*binance.TradeV3
@@ -331,12 +350,13 @@ func (s *Svc) processSpotTrades(binanceSvc *api.BinanceSvc, startTime, endTime i
 		if profit > 0 {
 			amountOfTrades++
 			fee := s.addFee(user, profit)
+			totalProfit += profit
 			totalFee += fee
 			report += s.addReportLine(profit, fee, symbol, o.UpdateTime)
 		}
 	}
 
-	return totalFee, amountOfTrades, report, notFilledOrderIDs
+	return totalFee, totalProfit, amountOfTrades, report, notFilledOrderIDs
 }
 
 func (s *Svc) addFee(user db.User, realizedPnl float64) float64 {
@@ -387,14 +407,14 @@ func (s *Svc) addReportLine(realizedPnl, fee float64, symbol string, closedDate 
 	return fmt.Sprintf(FeeLineMsgStructure, symbol, date.Format("2006-01-02"), realizedPnl, fee)
 }
 
-func (s *Svc) addStartAndEndToReport(reportLines string, amountOfTrades int, feeSum float64) string {
+func (s *Svc) addStartAndEndToReport(amountOfTrades int, feeSum, profitSum float64) (string, string) {
 	fromDate := time.Now().Add(-7 * 24 * time.Hour).Format("2006-01-02")
 	toDate := time.Now().Format("2006-01-02")
 
 	reportStart := fmt.Sprintf(ReportStartMsg, fromDate, toDate)
-	reportEnd := fmt.Sprintf(ReportEndMsg, amountOfTrades, feeSum)
+	reportEnd := fmt.Sprintf(ReportEndMsg, amountOfTrades, profitSum, feeSum)
 
-	return reportStart + reportLines + reportEnd
+	return reportStart, reportEnd
 }
 
 func PingService() {
