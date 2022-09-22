@@ -281,16 +281,18 @@ func (s *Svc) processSpotTrades(binanceSvc *api.BinanceSvc, startTime, endTime i
 	}
 
 	allTrades = append(allTrades, prevSyncOrders...)
-
-	var orders []*binance.Order
+	orders := make(map[int64]*binance.Order)
 	for _, trade := range allTrades {
+		if _, found := orders[trade.OrderID]; found {
+			continue
+		}
 		order, err := binanceSvc.GetOrderByID(trade.OrderID, symbol)
 		if err != nil {
 			log.Println(err)
 		}
 		if order != nil {
 			if order.Status == binance.OrderStatusTypeFilled {
-				orders = append(orders, order)
+				orders[trade.OrderID] = order
 			} else if order.Status == binance.OrderStatusTypeNew || order.Status == binance.OrderStatusTypePartiallyFilled {
 				notFilledOrderIDs += fmt.Sprintf("%s_%d,", symbol, int(order.OrderID))
 			}
