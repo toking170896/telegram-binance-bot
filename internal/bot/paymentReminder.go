@@ -5,6 +5,7 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"log"
 	"strconv"
+	"strings"
 	"telegram-signals-bot/internal/api"
 	"telegram-signals-bot/internal/db"
 )
@@ -41,7 +42,11 @@ func (s *Svc) remindUser(user db.User) {
 			log.Println(err)
 		}
 
-		message := tgbotapi.NewMessage(int64(id), PaymentReminderMsg)
+		start := strings.LastIndex(report.ReportInfo.String, "S")
+		end := strings.LastIndex(report.ReportInfo.String, "P")
+		summary := report.ReportInfo.String[start:end]
+
+		message := tgbotapi.NewMessage(int64(id), PaymentReminderMsg+summary)
 		message.ReplyMarkup = GenerateNewLinkKeyboard(paymentLink)
 		_, err = s.Bot.Send(message)
 		if err != nil {

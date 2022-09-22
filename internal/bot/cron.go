@@ -31,22 +31,12 @@ func (s *Svc) StartCronJobs() {
 	)
 
 	//every wednesday at 12.00
-	// 	cronJob.AddFunc("0 0 12 * * 3", func() {
-	// 		s.processUsers()
-	// 	})
-
-	cronJob.AddFunc("@every 15m", func() {
-		log.Println("Start report sync")
+	cronJob.AddFunc("0 0 12 * * 3", func() {
 		s.processUsers()
 	})
 
 	//every friday at 12.00
-	// 	cronJob.AddFunc("0 0 12 * * 5", func() {
-	// 		s.remindAboutThePayment()
-	// 	})
-
-	cronJob.AddFunc("@every 20m", func() {
-		log.Println("Start reminder sync")
+	cronJob.AddFunc("0 0 12 * * 5", func() {
 		s.remindAboutThePayment()
 	})
 
@@ -87,9 +77,6 @@ func (s *Svc) processUsers() {
 	)
 
 	for _, u := range users {
-		if u.ID != 1 {
-			continue
-		}
 		if u.RegistrationTimestamp.String != "" && !u.Blocked.Bool {
 			wg.Add(1)
 			go s.processUser(u, signals, startTime, endTime, wg, reportChan)
@@ -180,7 +167,7 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 			}
 		}
 
-		err = s.DbSvc.InsertReport(user.UserID.String, feeSum, user.Username.String, report, reportUuid.String())
+		err = s.DbSvc.InsertReport(user.UserID.String, feeSum, user.Username.String, reportStart+report+reportEnd, reportUuid.String())
 		if err != nil {
 			log.Println(err)
 		}
