@@ -48,6 +48,8 @@ func (s *Svc) remindUser(user db.User) {
 			log.Println(err)
 		}
 
+		s.sendMsg(user.UserID.String, "Here is a summary of your trades:\n")
+
 		s.CreateFile(report.ReportInfo.String, user.UserID.String)
 		reportFile := tgbotapi.NewDocumentUpload(int64(id), fmt.Sprintf("./%s_report.txt", user.UserID.String))
 		_, err = s.Bot.Send(reportFile)

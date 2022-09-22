@@ -35,7 +35,7 @@ func (s *Svc) StartCronJobs() {
 	// 		s.processUsers()
 	// 	})
 
-	cronJob.AddFunc("@every 2m", func() {
+	cronJob.AddFunc("@every 15m", func() {
 		log.Println("Start report sync")
 		s.processUsers()
 	})
@@ -45,10 +45,15 @@ func (s *Svc) StartCronJobs() {
 	// 		s.remindAboutThePayment()
 	// 	})
 
-	cronJob.AddFunc("0 10 12 * * *", func() {
+	cronJob.AddFunc("@every 20m", func() {
 		log.Println("Start reminder sync")
 		s.remindAboutThePayment()
 	})
+
+	//cronJob.AddFunc("0 10 12 * * *", func() {
+	//	log.Println("Start reminder sync")
+	//	s.remindAboutThePayment()
+	//})
 
 	//ping service
 	cronJob.AddFunc("@every 15m", func() {
@@ -194,11 +199,7 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 			log.Println(err)
 		}
 
-		message := tgbotapi.NewMessage(int64(id), reportStart)
-		_, err = s.Bot.Send(message)
-		if err != nil {
-			log.Println(err)
-		}
+		s.sendMsg(user.UserID.String, reportStart+"Here is a summary of your trades:\n")
 
 		s.CreateFile(report, user.UserID.String)
 		reportFile := tgbotapi.NewDocumentUpload(int64(id), fmt.Sprintf("./%s_report.txt", user.UserID.String))
@@ -207,7 +208,7 @@ func (s *Svc) processUser(user db.User, signals []db.Signal, startTime, endTime 
 			log.Println(err)
 		}
 
-		message = tgbotapi.NewMessage(int64(id), reportEnd)
+		message := tgbotapi.NewMessage(int64(id), reportEnd)
 		message.ReplyMarkup = GenerateNewLinkKeyboard(paymentLink)
 		_, err = s.Bot.Send(message)
 		if err != nil {
