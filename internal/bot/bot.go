@@ -109,14 +109,15 @@ func (s *Svc) processCallbackQuery(update tgbotapi.Update) {
 		}
 		s.insertBinanceKeys(userID)
 	case DenyFeesState:
-		err := s.DbSvc.UpdateUserWithRulesAcceptedByUserID(userID, false)
-		if err != nil {
-			log.Println(err.Error())
-			s.sendMsg(userID, err.Error())
-			s.acceptFees(userID)
-			return
-		}
-		s.feesDeniedByUser(userID)
+		s.acceptFeesRetry(userID)
+		//err := s.DbSvc.UpdateUserWithRulesAcceptedByUserID(userID, false)
+		//if err != nil {
+		//	log.Println(err.Error())
+		//	s.sendMsg(userID, err.Error())
+		//	s.acceptFees(userID)
+		//	return
+		//}
+		//s.feesDeniedByUser(userID)
 	case GeneratePaymentLinkState:
 		s.generatePaymentLink(userID)
 	}
