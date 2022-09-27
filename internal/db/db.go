@@ -57,5 +57,19 @@ func OpenDatabase(c *config.Config) (*Svc, error) {
 		return nil, err
 	}
 
+	_, err = db.Exec("CREATE TABLE IF NOT EXISTS dailyReports (" +
+		"id int primary key auto_increment, " +
+		"uuid text, " +
+		"todayDate text, " +
+		"username text, " +
+		"userID text, " +
+		"closedDate text, " +
+		"symbol text, " +
+		"profit text, " +
+		"fees text)")
+	if err != nil {
+		return nil, err
+	}
+
 	return &Svc{db}, nil
 }

@@ -30,20 +30,20 @@ func (s *Svc) StartCronJobs() {
 		),
 	)
 
-	//every wednesday at 12.00
+	//every wednesday at 14.00 GMT+2
 	cronJob.AddFunc("0 0 12 * * 3", func() {
 		s.processUsers()
 	})
 
-	//every friday at 12.00
+	//every friday at 14.00 GMT+2
 	cronJob.AddFunc("0 0 12 * * 5", func() {
 		s.remindAboutThePayment()
 	})
 
-	//cronJob.AddFunc("0 10 12 * * *", func() {
-	//	log.Println("Start reminder sync")
-	//	s.remindAboutThePayment()
-	//})
+	//every day at 00.01 GMT+2
+	cronJob.AddFunc("0 1 22 * * *", func() {
+		s.CreateDailyReports()
+	})
 
 	//ping service
 	cronJob.AddFunc("@every 15m", func() {
@@ -63,7 +63,8 @@ func (s *Svc) processUsers() {
 		return
 	}
 
-	signals, err := s.DbSvc.GetSignalsSince(startTime)
+	timestamp := startTime * int64(time.Millisecond)
+	signals, err := s.DbSvc.GetSignalsSince(timestamp)
 	if err != nil {
 		log.Println(fmt.Sprintf("Error appered while trying to get signals in sendPaymentReport(), Error: %s", err.Error()))
 		return

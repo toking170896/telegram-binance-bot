@@ -205,6 +205,7 @@ func (s *BinanceSvc) GetUserTrades(symbol string, startTime, endTime int64) ([]T
 	var res []Trade
 	err = json.Unmarshal(bodyBytes, &res)
 	if err != nil {
+		log.Println("Error " + string(bodyBytes))
 		return nil, err
 	}
 
