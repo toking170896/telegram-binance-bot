@@ -375,6 +375,11 @@ func (s *Svc) addFee(user db.User, realizedPnl float64) float64 {
 				from1000To5000 = value
 			}
 		}
+		if len(percentages) == 1 {
+			from100To500 = from0To100
+			from500To1000 = from0To100
+			from1000To5000 = from0To100
+		}
 	}
 
 	switch {
