@@ -114,7 +114,7 @@ func (s *Svc) processDayTrades(binanceSvc *api.BinanceSvc, startTime, endTime in
 func (s *Svc) processSpotDayTrades(binanceSvc *api.BinanceSvc, startTime, endTime int64, symbol string, user db.User) {
 	results := binanceSvc.CalculateProfit(symbol, startTime, endTime)
 	for _, r := range results {
-		if r.Profit > 0 {
+		if r.Profit != 0 {
 			r.Fees = s.addFee(user, r.Profit)
 			err := s.DbSvc.InsertDailyReportForSpot(user.UserID.String, user.Username.String, symbol, r)
 			if err != nil {
