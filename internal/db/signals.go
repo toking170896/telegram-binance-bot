@@ -6,17 +6,25 @@ import (
 	"time"
 )
 
-type(
+type (
 	Signal struct {
-		ID               int    `db:"id,omitempty"`
-		Symbol           sql.NullString `db:"symbol,omitempty"`
-		Timestamp        sql.NullString  `db:"timestamp,omitempty"`
+		ID        int            `db:"id,omitempty"`
+		Symbol    sql.NullString `db:"symbol,omitempty"`
+		Timestamp sql.NullString `db:"timestamp,omitempty"`
 	}
 )
 
 func (s *Svc) InsertSignal(symbol string) error {
-	unix := strconv.Itoa(int(time.Now().UnixNano()))
-	_, err := s.Db.Exec("INSERT INTO signals (symbol, timestamp) values (?, ?)", symbol, unix)
+	tradeTime := ""
+	unixNano := time.Now().UnixNano()
+	location, err := time.LoadLocation("Europe/Rome")
+	if err != nil {
+		tradeTime = time.Unix(0, unixNano).Format(time.RFC3339)
+	} else {
+		tradeTime = time.Unix(0, unixNano).In(location).Format(time.RFC3339)
+	}
+
+	_, err = s.Db.Exec("INSERT INTO signals (symbol, timestamp, tradeTime) values (?, ?, ?)", symbol, strconv.Itoa(int(unixNano)), tradeTime)
 	if err != nil {
 		return err
 	}

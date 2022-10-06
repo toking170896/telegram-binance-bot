@@ -148,18 +148,73 @@ func (s *BinanceSvc) GetSymbolPrice(symbol string) (*binance.SymbolPrice, error)
 }
 
 func (s *BinanceSvc) ListMyTrades(symbol string, startTime, endTime int64) ([]*binance.TradeV3, error) {
-	trades, err := s.Cli.NewListTradesService().Symbol(symbol).StartTime(startTime).EndTime(endTime).Do(context.Background())
-	if err != nil {
-		return nil, err
+	var trades []*binance.TradeV3
+	var err error
+	for {
+		trades, err = s.Cli.NewListTradesService().Symbol(symbol).StartTime(startTime).EndTime(endTime).Do(context.Background())
+		if err != nil {
+			if common.IsAPIError(err) {
+				apiErr := err.(*common.APIError)
+				if apiErr.Code == -1003 {
+					log.Println("Reached binance api limit, cool down for 60 sec")
+					time.Sleep(1 * time.Minute)
+					continue
+				}
+			}
+			return nil, err
+		}
+		break
 	}
 
 	return trades, nil
 }
 
+func (s *BinanceSvc) ListMyOrders(symbol string, startTime int64, endTime int64) ([]*binance.Order, error) {
+	var orders []*binance.Order
+	var err error
+	for {
+		orders, err = s.Cli.NewListOrdersService().Symbol(symbol).StartTime(startTime).EndTime(endTime).Limit(1000).Do(context.Background())
+		if err != nil {
+			if common.IsAPIError(err) {
+				apiErr := err.(*common.APIError)
+				if apiErr.Code == -1003 {
+					log.Println("Reached binance api limit, cool down for 60 sec")
+					time.Sleep(1 * time.Minute)
+					continue
+				}
+			}
+			return nil, err
+		}
+		break
+	}
+
+	var filledOrders []*binance.Order
+	for _, o := range orders {
+		if o.Status == "FILLED" {
+			filledOrders = append(filledOrders, o)
+		}
+	}
+
+	return filledOrders, nil
+}
+
 func (s *BinanceSvc) GetOrderByID(id int64, symbol string) (*binance.Order, error) {
-	order, err := s.Cli.NewGetOrderService().OrderID(id).Symbol(symbol).Do(context.Background())
-	if err != nil {
-		return nil, err
+	var order *binance.Order
+	var err error
+	for {
+		order, err = s.Cli.NewGetOrderService().OrderID(id).Symbol(symbol).Do(context.Background())
+		if err != nil {
+			if common.IsAPIError(err) {
+				apiErr := err.(*common.APIError)
+				if apiErr.Code == -1003 {
+					log.Println("Reached binance api limit, cool down for 60 sec")
+					time.Sleep(1 * time.Minute)
+					continue
+				}
+			}
+			return nil, err
+		}
+		break
 	}
 
 	return order, nil
@@ -211,6 +266,20 @@ func (s *BinanceSvc) GetUserTrades(symbol string, startTime, endTime int64) ([]T
 
 	return res, nil
 
+}
+
+func (s *BinanceSvc) GetPositionRisk(symbol string, endTime int64) (*binance.Kline, error) {
+	startTime := time.Unix(0, endTime*int64(time.Millisecond)).Add(-1*time.Minute).UnixNano() / int64(time.Millisecond)
+	klines, err := s.Cli.NewKlinesService().Symbol(symbol).StartTime(startTime).EndTime(endTime).Interval("1m").Do(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
+	if len(klines) > 0 {
+		return klines[0], nil
+	}
+
+	return nil, nil
 }
 
 func (s *BinanceSvc) GetPaymentLink(amount float64, userID, reportUuid string) (string, error) {

@@ -2,8 +2,6 @@ package bot
 
 import (
 	"fmt"
-	"github.com/adshao/go-binance/v2"
-	"github.com/adshao/go-binance/v2/common"
 	uuid "github.com/satori/go.uuid"
 	"log"
 	"strconv"
@@ -17,6 +15,8 @@ func (s *Svc) CreateDailyReports() {
 	now := time.Now()
 	startTime := now.Add(-24*time.Hour).UnixNano() / int64(time.Millisecond)
 	endTime := now.UnixNano() / int64(time.Millisecond)
+	//endTime = time.Unix(1664257335, 0).UnixNano()/ int64(time.Millisecond)
+	//startTime = time.Unix(1664191980, 0).UnixNano()/ int64(time.Millisecond)
 
 	users, err := s.DbSvc.GetUsers()
 	if err != nil {
@@ -112,69 +112,11 @@ func (s *Svc) processDayTrades(binanceSvc *api.BinanceSvc, startTime, endTime in
 }
 
 func (s *Svc) processSpotDayTrades(binanceSvc *api.BinanceSvc, startTime, endTime int64, symbol string, user db.User) {
-	allTrades, err := binanceSvc.ListMyTrades(symbol, startTime, endTime)
-	if err != nil {
-		if common.IsAPIError(err) {
-			apiErr := err.(*common.APIError)
-			if apiErr.Code == -1003 {
-				log.Println("Reached binance api limit, cool down for 60 sec")
-				time.Sleep(1 * time.Minute)
-				allTrades, _ = binanceSvc.ListMyTrades(symbol, startTime, endTime)
-			}
-		}
-		log.Println(fmt.Sprintf("Error: %s, Username: %s", err.Error(), user.Username.String))
-	}
-
-	orders := make(map[int64]*binance.Order)
-	for _, trade := range allTrades {
-		if _, found := orders[trade.OrderID]; found {
-			continue
-		}
-		order, err := binanceSvc.GetOrderByID(trade.OrderID, symbol)
-		if err != nil {
-			log.Println(fmt.Sprintf("Error: %s, Username: %s", err.Error(), user.Username.String))
-		}
-		if order != nil {
-			if order.Status == binance.OrderStatusTypeFilled {
-				orders[trade.OrderID] = order
-			}
-		}
-	}
-
-	for _, o := range orders {
-		symbolPrice, err := binanceSvc.GetSymbolPrice(o.Symbol)
-		if err != nil {
-			log.Println(fmt.Sprintf("Error: %s, Username: %s", err.Error(), user.Username.String))
-			continue
-		}
-
-		if symbolPrice == nil {
-			continue
-		}
-		currentPrice, err := strconv.ParseFloat(symbolPrice.Price, 64)
-		if err != nil {
-			log.Println(fmt.Sprintf("Error: %s, Username: %s", err.Error(), user.Username.String))
-			continue
-		}
-
-		executedQty, err := strconv.ParseFloat(o.ExecutedQuantity, 64)
-		if err != nil {
-			log.Println(fmt.Sprintf("Error: %s, Username: %s", err.Error(), user.Username.String))
-			continue
-		}
-
-		cumulativeQuoteQty, err := strconv.ParseFloat(o.CummulativeQuoteQuantity, 64)
-		if err != nil {
-			log.Println(fmt.Sprintf("Error: %s, Username: %s", err.Error(), user.Username.String))
-			continue
-		}
-
-		profit := currentPrice*executedQty - cumulativeQuoteQty
-		if profit > 0 {
-			fee := s.addFee(user, profit)
-			closedDate := time.Unix(0, o.UpdateTime*int64(time.Millisecond)).Format("2006-01-02")
-			reportUuid := uuid.NewV4()
-			err = s.DbSvc.InsertDailyReport(user.UserID.String, user.Username.String, symbol, reportUuid.String(), closedDate, fee, profit)
+	results := binanceSvc.CalculateProfit(symbol, startTime, endTime)
+	for _, r := range results {
+		if r.Profit > 0 {
+			r.Fees = s.addFee(user, r.Profit)
+			err := s.DbSvc.InsertDailyReportForSpot(user.UserID.String, user.Username.String, symbol, r)
 			if err != nil {
 				log.Println(fmt.Sprintf("Error: %s, Username: %s", err.Error(), user.Username.String))
 			}

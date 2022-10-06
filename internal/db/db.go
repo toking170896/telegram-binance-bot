@@ -39,7 +39,8 @@ func OpenDatabase(c *config.Config) (*Svc, error) {
 	_, err = db.Exec("CREATE TABLE IF NOT EXISTS signals (" +
 		"id int primary key auto_increment, " +
 		"symbol text, " +
-		"timestamp text)")
+		"timestamp text, " +
+		"tradeTime text)")
 	if err != nil {
 		return nil, err
 	}
@@ -65,6 +66,11 @@ func OpenDatabase(c *config.Config) (*Svc, error) {
 		"userID text, " +
 		"closedDate text, " +
 		"symbol text, " +
+		"buyPrice text, " +
+		"sellPrice text, " +
+		"buyccq text, " +
+		"commission text, " +
+		"profitWithDust text, " +
 		"profit text, " +
 		"fees text)")
 	if err != nil {
