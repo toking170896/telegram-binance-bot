@@ -127,6 +127,7 @@ func (s *Svc) processSignal(msg string) {
 	var prevLine, symbol string
 	var symbolLine bool
 
+	log.Println("Caught a signal")
 	lines := strings.Split(msg, "\n")
 	for _, line := range lines {
 		if symbolLine {
@@ -140,6 +141,7 @@ func (s *Svc) processSignal(msg string) {
 	}
 
 	if symbol != "" {
+		log.Println(fmt.Sprintf("Adding signal for %s", symbol))
 		err := s.DbSvc.InsertSignal(symbol)
 		if err != nil {
 			log.Println(err.Error())
