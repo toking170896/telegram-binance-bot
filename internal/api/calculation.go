@@ -42,10 +42,23 @@ func (s *BinanceSvc) getPrevDayLastBuyOrderAndTrades(symbol string, startTime in
 	endTime := startTime
 	startTime = time.Unix(0, startTime*int64(time.Millisecond)).Add(-24*time.Hour).UnixNano() / int64(time.Millisecond)
 
-	allOrders, err := s.ListMyOrders(symbol, startTime, endTime)
-	if err != nil {
-		return nil, nil, err
+	var allOrders []*binance.Order
+	var err error
+	for {
+		allOrders, err = s.ListMyOrders(symbol, startTime, endTime)
+		if err != nil {
+			return nil, nil, err
+		}
+		if allOrders != nil {
+			break
+		}
+		endTime = startTime
+		startTime = time.Unix(0, startTime*int64(time.Millisecond)).Add(-24*time.Hour).UnixNano() / int64(time.Millisecond)
 	}
+	//allOrders, err := s.ListMyOrders(symbol, startTime, endTime)
+	//if err != nil {
+	//	return nil, nil, err
+	//}
 
 	for _, o := range allOrders {
 		if o.Status == binance.OrderStatusTypeFilled && o.Side == binance.SideTypeBuy {
@@ -62,6 +75,10 @@ func (s *BinanceSvc) getPrevDayLastBuyOrderAndTrades(symbol string, startTime in
 		if trade.OrderID == order.OrderID {
 			orderTrades = append(orderTrades, trade)
 		}
+	}
+
+	if order == nil {
+		return nil, orderTrades, nil
 	}
 
 	return []*binance.Order{order}, orderTrades, nil

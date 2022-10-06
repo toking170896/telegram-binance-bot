@@ -11,6 +11,7 @@ type (
 		ID        int            `db:"id,omitempty"`
 		Symbol    sql.NullString `db:"symbol,omitempty"`
 		Timestamp sql.NullString `db:"timestamp,omitempty"`
+		TradeTime sql.NullString `db:"tradeTime,omitempty"`
 	}
 )
 
@@ -41,7 +42,7 @@ func (s *Svc) GetSignalsSince(timestamp int64) ([]Signal, error) {
 
 	for rows.Next() {
 		signal := Signal{}
-		err = rows.Scan(&signal.ID, &signal.Symbol, &signal.Timestamp)
+		err = rows.Scan(&signal.ID, &signal.Symbol, &signal.Timestamp, &signal.TradeTime)
 		if err != nil {
 			return nil, err
 		}
