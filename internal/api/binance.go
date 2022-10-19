@@ -147,11 +147,11 @@ func (s *BinanceSvc) GetSymbolPrice(symbol string) (*binance.SymbolPrice, error)
 	return nil, nil
 }
 
-func (s *BinanceSvc) ListMyTrades(symbol string, startTime, endTime int64) ([]*binance.TradeV3, error) {
+func (s *BinanceSvc) ListMyTradesWithoutPagination(symbol string, startTime, endTime int64) ([]*binance.TradeV3, error) {
 	var trades []*binance.TradeV3
 	var err error
 	for {
-		trades, err = s.Cli.NewListTradesService().Symbol(symbol).StartTime(startTime).EndTime(endTime).Do(context.Background())
+		trades, err = s.Cli.NewListTradesService().Symbol(symbol).StartTime(startTime).EndTime(endTime).Limit(1000).Do(context.Background())
 		if err != nil {
 			if common.IsAPIError(err) {
 				apiErr := err.(*common.APIError)
@@ -163,6 +163,64 @@ func (s *BinanceSvc) ListMyTrades(symbol string, startTime, endTime int64) ([]*b
 			}
 			return nil, err
 		}
+		break
+	}
+
+	return trades, nil
+}
+
+func (s *BinanceSvc) ListMyTrades(symbol string, startTime, endTime int64) ([]*binance.TradeV3, error) {
+	var trades []*binance.TradeV3
+	var tradeID int64
+	limit := 1000
+	for {
+		var svc *binance.ListTradesService
+		if tradeID != 0 {
+			svc = s.Cli.NewListTradesService().Symbol(symbol).FromID(tradeID).Limit(limit)
+		} else {
+			svc = s.Cli.NewListTradesService().Symbol(symbol).StartTime(startTime).EndTime(endTime).Limit(limit)
+		}
+		res, err := svc.Do(context.Background())
+		if err != nil {
+			if common.IsAPIError(err) {
+				apiErr := err.(*common.APIError)
+				if apiErr.Code == -1003 {
+					log.Println("Reached binance api limit, cool down for 60 sec")
+					time.Sleep(1 * time.Minute)
+					continue
+				}
+			}
+			return nil, err
+		}
+
+		//if limit is reached, move to fromID fetching logic
+		if len(res) == limit {
+			stopped := false
+			switch tradeID {
+			case 0:
+				trades = append(trades, res[0])
+				tradeID = res[0].ID
+			default:
+				for key, r := range res {
+					if key == 0 {
+						continue
+					}
+					if r.Time < endTime {
+						trades = append(trades, r)
+					} else {
+						stopped = true
+						break
+					}
+				}
+				tradeID = res[len(res)-1].ID
+			}
+			if !stopped {
+				continue
+			}
+		} else {
+			trades = append(trades, res...)
+		}
+
 		break
 	}
 

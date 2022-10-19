@@ -49,21 +49,18 @@ func (s *BinanceSvc) getPrevDayLastBuyOrderAndTrades(symbol string, startTime in
 		if err != nil {
 			return nil, nil, err
 		}
-		if allOrders != nil {
+
+		for _, o := range allOrders {
+			if o.Status == binance.OrderStatusTypeFilled && o.Side == binance.SideTypeBuy {
+				order = o
+			}
+		}
+
+		if order != nil {
 			break
 		}
 		endTime = startTime
 		startTime = time.Unix(0, startTime*int64(time.Millisecond)).Add(-24*time.Hour).UnixNano() / int64(time.Millisecond)
-	}
-	//allOrders, err := s.ListMyOrders(symbol, startTime, endTime)
-	//if err != nil {
-	//	return nil, nil, err
-	//}
-
-	for _, o := range allOrders {
-		if o.Status == binance.OrderStatusTypeFilled && o.Side == binance.SideTypeBuy {
-			order = o
-		}
 	}
 
 	allTrades, err := s.ListMyTrades(symbol, startTime, endTime)
@@ -121,7 +118,7 @@ func (s *BinanceSvc) profitCalculationUpdated(symbol string, startTime, endTime 
 
 func matchOrders(allOrders []*binance.Order, allTrades []*binance.TradeV3) []DailyReport {
 	var results []DailyReport
-	var buyPrice, sellPrice, sellTradesCount, tradesCommission, buyCCQ float64
+	var buyPrice, buyTradesCount, sellPrice, sellTradesCount, tradesCommission, buyCCQ float64
 	var closingTime int64
 
 	location, _ := time.LoadLocation("Europe/Rome")
@@ -129,6 +126,9 @@ func matchOrders(allOrders []*binance.Order, allTrades []*binance.TradeV3) []Dai
 	for _, o := range allOrders {
 		if buyPrice != 0 && sellPrice != 0 && buyCCQ != 0 {
 			sellPrice = sellPrice / sellTradesCount
+			if buyTradesCount != 0 {
+				buyPrice = buyPrice / buyTradesCount
+			}
 			orderProfitWithDust := (sellPrice-buyPrice)/buyPrice*buyCCQ - tradesCommission
 			orderProfit := orderProfitWithDust - (0.01 * orderProfitWithDust)
 
@@ -141,8 +141,6 @@ func matchOrders(allOrders []*binance.Order, allTrades []*binance.TradeV3) []Dai
 				ProfitWithDust: math.Round(orderProfitWithDust*10000) / 10000,
 				Profit:         math.Round(orderProfit*10000) / 10000,
 			}
-			results = append(results, result)
-
 			if location == nil {
 				result.TodayDate = time.Now().Format("2006-01-02")
 				result.ClosedDate = time.Unix(0, closingTime*int64(time.Millisecond)).Format(time.RFC3339)
@@ -150,7 +148,10 @@ func matchOrders(allOrders []*binance.Order, allTrades []*binance.TradeV3) []Dai
 				result.TodayDate = time.Now().In(location).Format("2006-01-02")
 				result.ClosedDate = time.Unix(0, closingTime*int64(time.Millisecond)).In(location).Format(time.RFC3339)
 			}
+			results = append(results, result)
+
 			buyPrice = 0
+			buyTradesCount = 0
 			sellPrice = 0
 			sellTradesCount = 0
 			buyCCQ = 0
@@ -168,6 +169,12 @@ func matchOrders(allOrders []*binance.Order, allTrades []*binance.TradeV3) []Dai
 				if o.OrderID == t.OrderID {
 					if commission, err := strconv.ParseFloat(t.Commission, 64); err == nil {
 						tradesCommission += commission
+						if buyPrice == 0.0 {
+							if p, err := strconv.ParseFloat(t.Price, 64); err == nil {
+								buyPrice += p
+								buyTradesCount++
+							}
+						}
 					}
 				}
 			}
@@ -191,6 +198,9 @@ func matchOrders(allOrders []*binance.Order, allTrades []*binance.TradeV3) []Dai
 
 	if buyPrice != 0 && sellPrice != 0 && buyCCQ != 0 {
 		sellPrice = sellPrice / sellTradesCount
+		if buyTradesCount != 0 {
+			buyPrice = buyPrice / buyTradesCount
+		}
 		orderProfitWithDust := (sellPrice-buyPrice)/buyPrice*buyCCQ - tradesCommission
 		orderProfit := orderProfitWithDust - (0.01 * orderProfitWithDust)
 		result := DailyReport{

@@ -2,7 +2,6 @@ package bot
 
 import (
 	"fmt"
-	"github.com/adshao/go-binance/v2"
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/robfig/cron/v3"
 	"github.com/satori/go.uuid"
@@ -270,83 +269,112 @@ func (s *Svc) processSpotTrades(binanceSvc *api.BinanceSvc, startTime, endTime i
 	var totalFee, totalProfit float64
 	var amountOfTrades int
 
-	var prevSyncOrders []*binance.TradeV3
-	if user.NotFilledOrderIDs.String != "" {
-		ids := strings.Split(user.NotFilledOrderIDs.String, ",")
-		for _, i := range ids {
-			id, err := strconv.Atoi(i)
-			if err != nil {
-				log.Print(err)
-				continue
-			}
-			prevSyncOrders = append(prevSyncOrders, &binance.TradeV3{OrderID: int64(id)})
+	dayEnd := time.Unix(0, startTime*int64(time.Millisecond)).Add(24*time.Hour).UnixNano() / int64(time.Millisecond)
+	day := 1
+	for {
+		if day == 8 {
+			break
 		}
-	}
-
-	allTrades, err := binanceSvc.ListAllMyTradesForTheWeek(symbol, startTime, endTime)
-	if err != nil {
-		log.Println(err)
-	}
-
-	allTrades = append(allTrades, prevSyncOrders...)
-	orders := make(map[int64]*binance.Order)
-	for _, trade := range allTrades {
-		if _, found := orders[trade.OrderID]; found {
-			continue
-		}
-		order, err := binanceSvc.GetOrderByID(trade.OrderID, symbol)
-		if err != nil {
-			log.Println(err)
-		}
-		if order != nil {
-			if order.Status == binance.OrderStatusTypeFilled {
-				orders[trade.OrderID] = order
-			} else if order.Status == binance.OrderStatusTypeNew || order.Status == binance.OrderStatusTypePartiallyFilled {
-				notFilledOrderIDs += fmt.Sprintf("%s_%d,", symbol, int(order.OrderID))
+		results := binanceSvc.CalculateProfit(symbol, startTime, dayEnd)
+		for _, r := range results {
+			if r.Profit > 0 {
+				amountOfTrades++
+				fee := s.addFee(user, r.Profit)
+				totalProfit += r.Profit
+				totalFee += fee
+				report += s.addReportLineForSpot(r.Profit, fee, symbol, r.ClosedDate)
 			}
 		}
-	}
-
-	for _, o := range orders {
-		symbolPrice, err := binanceSvc.GetSymbolPrice(o.Symbol)
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-
-		if symbolPrice == nil {
-			continue
-		}
-		currentPrice, err := strconv.ParseFloat(symbolPrice.Price, 64)
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-
-		executedQty, err := strconv.ParseFloat(o.ExecutedQuantity, 64)
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-
-		cumulativeQuoteQty, err := strconv.ParseFloat(o.CummulativeQuoteQuantity, 64)
-		if err != nil {
-			log.Print(err)
-			continue
-		}
-
-		profit := currentPrice*executedQty - cumulativeQuoteQty
-		if profit > 0 {
-			amountOfTrades++
-			fee := s.addFee(user, profit)
-			totalProfit += profit
-			totalFee += fee
-			report += s.addReportLine(profit, fee, symbol, o.UpdateTime)
-		}
+		day++
+		startTime = dayEnd
+		dayEnd = time.Unix(0, startTime*int64(time.Millisecond)).Add(24*time.Hour).UnixNano() / int64(time.Millisecond)
 	}
 
 	return totalFee, totalProfit, amountOfTrades, report, notFilledOrderIDs
 }
+
+//func (s *Svc) processSpotTrades(binanceSvc *api.BinanceSvc, startTime, endTime int64, symbol string, user db.User) (float64, float64, int, string, string) {
+//	var notFilledOrderIDs, report string
+//	var totalFee, totalProfit float64
+//	var amountOfTrades int
+//
+//	var prevSyncOrders []*binance.TradeV3
+//	if user.NotFilledOrderIDs.String != "" {
+//		ids := strings.Split(user.NotFilledOrderIDs.String, ",")
+//		for _, i := range ids {
+//			id, err := strconv.Atoi(i)
+//			if err != nil {
+//				log.Print(err)
+//				continue
+//			}
+//			prevSyncOrders = append(prevSyncOrders, &binance.TradeV3{OrderID: int64(id)})
+//		}
+//	}
+//
+//	allTrades, err := binanceSvc.ListAllMyTradesForTheWeek(symbol, startTime, endTime)
+//	if err != nil {
+//		log.Println(err)
+//	}
+//
+//	allTrades = append(allTrades, prevSyncOrders...)
+//	orders := make(map[int64]*binance.Order)
+//	for _, trade := range allTrades {
+//		if _, found := orders[trade.OrderID]; found {
+//			continue
+//		}
+//		order, err := binanceSvc.GetOrderByID(trade.OrderID, symbol)
+//		if err != nil {
+//			log.Println(err)
+//		}
+//		if order != nil {
+//			if order.Status == binance.OrderStatusTypeFilled {
+//				orders[trade.OrderID] = order
+//			} else if order.Status == binance.OrderStatusTypeNew || order.Status == binance.OrderStatusTypePartiallyFilled {
+//				notFilledOrderIDs += fmt.Sprintf("%s_%d,", symbol, int(order.OrderID))
+//			}
+//		}
+//	}
+//
+//	for _, o := range orders {
+//		symbolPrice, err := binanceSvc.GetSymbolPrice(o.Symbol)
+//		if err != nil {
+//			log.Print(err)
+//			continue
+//		}
+//
+//		if symbolPrice == nil {
+//			continue
+//		}
+//		currentPrice, err := strconv.ParseFloat(symbolPrice.Price, 64)
+//		if err != nil {
+//			log.Print(err)
+//			continue
+//		}
+//
+//		executedQty, err := strconv.ParseFloat(o.ExecutedQuantity, 64)
+//		if err != nil {
+//			log.Print(err)
+//			continue
+//		}
+//
+//		cumulativeQuoteQty, err := strconv.ParseFloat(o.CummulativeQuoteQuantity, 64)
+//		if err != nil {
+//			log.Print(err)
+//			continue
+//		}
+//
+//		profit := currentPrice*executedQty - cumulativeQuoteQty
+//		if profit > 0 {
+//			amountOfTrades++
+//			fee := s.addFee(user, profit)
+//			totalProfit += profit
+//			totalFee += fee
+//			report += s.addReportLine(profit, fee, symbol, o.UpdateTime)
+//		}
+//	}
+//
+//	return totalFee, totalProfit, amountOfTrades, report, notFilledOrderIDs
+//}
 
 func (s *Svc) addFee(user db.User, realizedPnl float64) float64 {
 	var from0To100, from100To500, from500To1000, from1000To5000, result float64
@@ -399,6 +427,10 @@ func (s *Svc) addFee(user db.User, realizedPnl float64) float64 {
 func (s *Svc) addReportLine(realizedPnl, fee float64, symbol string, closedDate int64) string {
 	date := time.Unix(0, closedDate*int64(time.Millisecond))
 	return fmt.Sprintf(FeeLineMsgStructure, symbol, date.Format("2006-01-02"), realizedPnl, fee)
+}
+
+func (s *Svc) addReportLineForSpot(realizedPnl, fee float64, symbol string, closedDate string) string {
+	return fmt.Sprintf(FeeLineMsgStructure, symbol, closedDate, realizedPnl, fee)
 }
 
 func (s *Svc) addStartAndEndToReport(amountOfTrades int, feeSum, profitSum float64) (string, string) {
