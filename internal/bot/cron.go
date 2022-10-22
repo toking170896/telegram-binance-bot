@@ -53,7 +53,7 @@ func (s *Svc) StartCronJobs() {
 
 func (s *Svc) processUsers() {
 	now := time.Now()
-	signalsTimestamp := now.Add(-24*8*time.Hour).UnixNano() / int64(time.Millisecond)
+	signalsTimestamp := now.Add(-24*14*time.Hour).UnixNano() / int64(time.Millisecond)
 	startTime := now.Add(-7*24*time.Hour).UnixNano() / int64(time.Millisecond)
 	endTime := now.UnixNano() / int64(time.Millisecond)
 
