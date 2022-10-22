@@ -13,6 +13,7 @@ import (
 
 func (s *Svc) CreateDailyReports() {
 	now := time.Now()
+	signalsTimestamp := now.Add(-24*8*time.Hour).UnixNano() / int64(time.Millisecond)
 	startTime := now.Add(-24*time.Hour).UnixNano() / int64(time.Millisecond)
 	endTime := now.UnixNano() / int64(time.Millisecond)
 	//endTime = time.Unix(1664257335, 0).UnixNano()/ int64(time.Millisecond)
@@ -24,7 +25,7 @@ func (s *Svc) CreateDailyReports() {
 		return
 	}
 
-	timestamp := startTime * int64(time.Millisecond)
+	timestamp := signalsTimestamp * int64(time.Millisecond)
 	signals, err := s.DbSvc.GetSignalsSince(timestamp)
 	if err != nil {
 		log.Println(fmt.Sprintf("Error appered while trying to get signals in DAILY sendPaymentReport(), Error: %s", err.Error()))
