@@ -158,26 +158,49 @@ func matchOrders(allOrders []*binance.Order, allTrades []*binance.TradeV3) []Dai
 			tradesCommission = 0
 		}
 
+		//if o.Side == binance.SideTypeBuy {
+		//	if ccq, err := strconv.ParseFloat(o.CummulativeQuoteQuantity, 64); err == nil {
+		//		if p, err := strconv.ParseFloat(o.Price, 64); err == nil {
+		//			buyCCQ = ccq
+		//			buyPrice = p
+		//		}
+		//	}
+		//	for _, t := range allTrades {
+		//		if o.OrderID == t.OrderID {
+		//			if commission, err := strconv.ParseFloat(t.Commission, 64); err == nil {
+		//				tradesCommission += commission
+		//				if buyPrice == 0.0 {
+		//					if p, err := strconv.ParseFloat(t.Price, 64); err == nil {
+		//						buyPrice += p
+		//						buyTradesCount++
+		//					}
+		//				}
+		//			}
+		//		}
+		//	}
+		//}
 		if o.Side == binance.SideTypeBuy {
+			currentPrice := 0.0
 			if ccq, err := strconv.ParseFloat(o.CummulativeQuoteQuantity, 64); err == nil {
-				if p, err := strconv.ParseFloat(o.Price, 64); err == nil {
-					buyCCQ = ccq
-					buyPrice = p
-				}
+				//if p, err := strconv.ParseFloat(o.Price, 64); err == nil {
+				buyCCQ += ccq
+				//currentPrice = p
+				//}
 			}
 			for _, t := range allTrades {
 				if o.OrderID == t.OrderID {
 					if commission, err := strconv.ParseFloat(t.Commission, 64); err == nil {
 						tradesCommission += commission
-						if buyPrice == 0.0 {
+						if currentPrice == 0.0 {
 							if p, err := strconv.ParseFloat(t.Price, 64); err == nil {
-								buyPrice += p
+								currentPrice += p
 								buyTradesCount++
 							}
 						}
 					}
 				}
 			}
+			buyPrice += currentPrice
 		}
 
 		if o.Side == binance.SideTypeSell {

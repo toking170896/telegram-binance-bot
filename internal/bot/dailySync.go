@@ -93,7 +93,7 @@ func (s *Svc) processDayTrades(binanceSvc *api.BinanceSvc, startTime, endTime in
 			if err != nil {
 				log.Println(fmt.Sprintf("Error: %s, Username: %s", err.Error(), user.Username.String))
 			}
-			if realizedPnl > 0 {
+			if realizedPnl != 0 {
 				fee := s.addFee(user, realizedPnl)
 				orderRealizedPnl += realizedPnl
 				orderFee += fee
@@ -101,7 +101,8 @@ func (s *Svc) processDayTrades(binanceSvc *api.BinanceSvc, startTime, endTime in
 			}
 		}
 
-		if orderFee > 0 {
+		log.Println(fmt.Sprintf("OrderID: %d, profit: %.2f", orderID, orderFee))
+		if orderFee != 0 {
 			closedDate := time.Unix(0, closedTime*int64(time.Millisecond)).Format("2006-01-02")
 			reportUuid := uuid.NewV4()
 			err = s.DbSvc.InsertDailyReport(user.UserID.String, user.Username.String, symbol, reportUuid.String(), closedDate, orderFee, orderRealizedPnl)
